@@ -82,4 +82,45 @@ public class LocadoraServiceImpl extends UnicastRemoteObject implements Locadora
         }
     }
 
+    @Override
+    public List<Carro> listarCarrosVenda() throws RemoteException {
+        List<Carro> carrosVenda = new ArrayList<>();
+        String sql = "SELECT * FROM Carros WHERE status = 'venda'";
+
+        try (Connection conn = ConexaoBD.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                Carro carro = new Carro(
+                        rs.getInt("id_carro"),
+                        rs.getString("placa"),
+                        rs.getString("modelo"),
+                        rs.getString("marca"),
+                        rs.getInt("ano"),
+                        rs.getDouble("quilometragem"),
+                        rs.getString("status"),
+                        rs.getDouble("preco_venda"),
+                        rs.getString("data_cadastro")
+                );
+                carrosVenda.add(carro);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RemoteException("Erro ao listar veículos à venda.", e);
+        }
+        return carrosVenda;
+    }
+
+    @Override
+    public boolean venderVeiculo(int id) throws RemoteException {
+        String sql = "UPDATE Carros SET status = 'vendido' WHERE id_carro = ? AND status = 'venda'";
+
+        try (Connection conn = ConexaoBD.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            return stmt.executeUpdate() > 0; // Retorna true se o veículo foi vendido
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new RemoteException("Erro ao vender veículo.", e);
+        }
+    }
+
 }

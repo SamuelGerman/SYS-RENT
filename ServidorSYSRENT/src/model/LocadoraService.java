@@ -8,4 +8,7 @@ public interface LocadoraService extends Remote {
     List<Carro> listarVeiculos() throws RemoteException;
     boolean reservarVeiculo(int id) throws RemoteException;
     boolean devolverVeiculo(int id) throws RemoteException;
+    List<Carro> listarCarrosVenda() throws RemoteException;
+    boolean venderVeiculo(int id) throws RemoteException;
+    
 }
