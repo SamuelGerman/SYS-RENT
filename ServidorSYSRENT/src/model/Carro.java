@@ -1,6 +1,8 @@
 package model;
 
 import java.io.Serializable;
+import java.util.Date;
+
 
 public class Carro implements Serializable {
     private int idCarro;
@@ -11,9 +13,9 @@ public class Carro implements Serializable {
     private double quilometragem;
     private String status;
     private Double precoVenda; // Pode ser null
-    private String dataCadastro;
+    private Date dataCadastro;
 
-    public Carro(int idCarro, String placa, String modelo, String marca, int ano, double quilometragem, String status, Double precoVenda, String dataCadastro) {
+    public Carro(int idCarro, String placa, String modelo, String marca, int ano, double quilometragem, String status, Double precoVenda, Date dataCadastro) {
         this.idCarro = idCarro;
         this.placa = placa;
         this.modelo = modelo;
@@ -42,8 +44,8 @@ public class Carro implements Serializable {
     public void setStatus(String status) { this.status = status; }
     public Double getPrecoVenda() { return precoVenda; }
     public void setPrecoVenda(Double precoVenda) { this.precoVenda = precoVenda; }
-    public String getDataCadastro() { return dataCadastro; }
-    public void setDataCadastro(String dataCadastro) { this.dataCadastro = dataCadastro; }
+    public Date getDataCadastro() { return dataCadastro; }
+    public void setDataCadastro(Date dataCadastro) { this.dataCadastro = dataCadastro; }
     
      @Override
     public String toString() {
