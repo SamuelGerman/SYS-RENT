@@ -1,5 +1,6 @@
 package controller;
 
+import java.sql.Statement;
 import model.LocadoraService;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -10,6 +11,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Date;
 import model.Carro;
 
 public class LocadoraServiceImpl extends UnicastRemoteObject implements LocadoraService {
@@ -224,36 +226,34 @@ public class LocadoraServiceImpl extends UnicastRemoteObject implements Locadora
         }
         return false;
     }
-    
+
     @Override
     public List<Carro> listarVeiculosComManutencaoPendente() throws RemoteException {
         List<Carro> veiculos = new ArrayList<>();
-        
+
         String sql = "SELECT * FROM Carros WHERE status = 'manutencao'";
-        
-        try (Connection connection = ConexaoBD.getConnection();
-             PreparedStatement stmt = connection.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+
+        try (Connection connection = ConexaoBD.getConnection(); PreparedStatement stmt = connection.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
                 Carro carro = new Carro(
-                    rs.getInt("id_carro"),
-                    rs.getString("placa"),
-                    rs.getString("modelo"),
-                    rs.getString("marca"),
-                    rs.getInt("ano"),
-                    rs.getDouble("quilometragem"),
-                    rs.getString("status"),
-                    rs.getDouble("preco_venda"),
-                    rs.getDate("data_cadastro")
+                        rs.getInt("id_carro"),
+                        rs.getString("placa"),
+                        rs.getString("modelo"),
+                        rs.getString("marca"),
+                        rs.getInt("ano"),
+                        rs.getDouble("quilometragem"),
+                        rs.getString("status"),
+                        rs.getDouble("preco_venda"),
+                        rs.getDate("data_cadastro")
                 );
                 veiculos.add(carro);
             }
-            
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        
+
         return veiculos;
     }
 
@@ -269,7 +269,7 @@ public class LocadoraServiceImpl extends UnicastRemoteObject implements Locadora
             stmt.setString(3, tipo);
             stmt.setDouble(4, custo);
             int rowsAffected = stmt.executeUpdate();
-            
+
             if (rowsAffected > 0) {
                 // Atualizar o status do carro para 'disponível' ou 'venda'
                 String updateSql = "UPDATE Carros SET status = ? WHERE id_carro = ? AND status = 'manutencao'";
@@ -277,11 +277,86 @@ public class LocadoraServiceImpl extends UnicastRemoteObject implements Locadora
                 updateStmt.setString(1, tipo);
                 updateStmt.setInt(2, idCarro);
                 updateStmt.executeUpdate();
-                
+
                 return true;
             }
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+        return false;
+    }
+
+    @Override
+    public boolean cadastrarOperador(String nome, String cpf, String telefone, String email, int idUsuario) throws RemoteException {
+        try (Connection connection = ConexaoBD.getConnection()) {
+            String sql = "INSERT INTO Operadores (nome, cpf, telefone, email, id_usuario) VALUES (?, ?, ?, ?, ?)";
+            PreparedStatement stmt = connection.prepareStatement(sql);
+            stmt.setString(1, nome);
+            stmt.setString(2, cpf);
+            stmt.setString(3, telefone);
+            stmt.setString(4, email);
+            stmt.setInt(5, idUsuario);
+
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0; // Retorna true se o operador foi cadastrado com sucesso
+        } catch (SQLException e) {
+            throw new RemoteException("Erro ao cadastrar operador.", e);
+        }
+    }
+
+    @Override
+    public int cadastrarUsuario(String login, String senha, String papel) throws RemoteException {
+        try (Connection connection = ConexaoBD.getConnection()) {
+            String sql = "INSERT INTO Usuarios (login, senha, papel) VALUES (?, ?, ?)";
+            PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            stmt.setString(1, login);
+            stmt.setString(2, senha); // Idealmente, hash da senha
+            stmt.setString(3, papel);
+
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected > 0) {
+                ResultSet rs = stmt.getGeneratedKeys();
+                if (rs.next()) {
+                    return rs.getInt(1); // Retorna o ID do usuário recém-criado
+                }
+            }
+        } catch (SQLException e) {
+            throw new RemoteException("Erro ao cadastrar usuário.", e);
+        }
+        return -1; // Retorna -1 em caso de falha
+    }
+
+    @Override
+    public boolean cadastrarCliente(String nome, String cpfCnpj, String endereco, String telefone, String email, int idUsuario) throws RemoteException {
+        try {
+            Connection connection = ConexaoBD.getConnection();
+
+            // Valida se o idUsuario existe na tabela Usuarios
+            String validaUsuarioSql = "SELECT COUNT(*) FROM Usuarios WHERE id_usuario = ?";
+            PreparedStatement validaStmt = connection.prepareStatement(validaUsuarioSql);
+            validaStmt.setInt(1, idUsuario);
+            ResultSet resultSet = validaStmt.executeQuery();
+            if (resultSet.next() && resultSet.getInt(1) == 0) {
+                throw new RemoteException("ID de usuário não encontrado. O cliente não pode ser cadastrado.");
+            }
+
+            // Insere os dados do cliente na tabela Clientes
+            String sql = "INSERT INTO Clientes (nome, cpf_cnpj, endereco, telefone, email, id_usuario) VALUES (?, ?, ?, ?, ?, ?)";
+            PreparedStatement stmt = connection.prepareStatement(sql);
+            stmt.setString(1, nome);
+            stmt.setString(2, cpfCnpj);
+            stmt.setString(3, endereco);
+            stmt.setString(4, telefone);
+            stmt.setString(5, email);
+            stmt.setInt(6, idUsuario);
+
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("Cliente cadastrado com sucesso.");
+                return true;
+            }
+        } catch (SQLException e) {
+            throw new RemoteException("Erro ao cadastrar cliente.", e);
         }
         return false;
     }
