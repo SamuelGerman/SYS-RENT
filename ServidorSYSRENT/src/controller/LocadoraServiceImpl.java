@@ -12,21 +12,44 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import model.Carro;
+import model.Usuario;
 
 public class LocadoraServiceImpl extends UnicastRemoteObject implements LocadoraService {
 
-    private final List<String> veiculos;
+    private final List<String> veiculos = null;
+    private final Map<String, Usuario> usuarios = new HashMap<>();
 
     public LocadoraServiceImpl() throws RemoteException {
-        super();
-        // Inicializando veículos (exemplo)
-        veiculos = new ArrayList<>();
-        veiculos.add("Carro 1 - Disponível");
-        veiculos.add("Carro 2 - Disponível");
-        veiculos.add("Carro 3 - Reservado");
+        super(); 
+        carregarUsuariosDoBanco();
+    }
+    
+    private void carregarUsuariosDoBanco() {
+        String query = "SELECT login, senha, papel FROM Usuarios";
+
+        try (Connection conn = ConexaoBD.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                String login = rs.getString("login");
+                String senha = rs.getString("senha");
+                String papel = rs.getString("papel");
+
+                usuarios.put(login, new Usuario(login, senha, papel)); // Adiciona ao HashMap
+                System.out.println("Usuário carregado: " + login + ", Papel: " + papel);
+            }
+            System.out.println("Usuários carregados com sucesso.");
+
+        } catch (SQLException e) {
+            System.err.println("Erro ao carregar usuários do banco: " + e.getMessage());
+        }
     }
 
+    
     @Override
     public List<Carro> listarVeiculos() throws RemoteException {
         List<Carro> carros = new ArrayList<>();
@@ -359,6 +382,24 @@ public class LocadoraServiceImpl extends UnicastRemoteObject implements Locadora
             throw new RemoteException("Erro ao cadastrar cliente.", e);
         }
         return false;
+    }
+
+    @Override
+    public boolean autenticarUsuario(String login, String senha) throws RemoteException {
+        Usuario usuario = usuarios.get(login); // Busca o usuário pelo login
+        if (usuario != null && usuario.getSenha().equals(senha)) {
+            return true; // Credenciais válidas
+        }
+        return false; // Login não encontrado ou senha inválida
+    }
+
+    @Override
+    public String obterPapelUsuario(String login) throws RemoteException {
+        Usuario usuario = usuarios.get(login); // Busca o usuário pelo login
+        if (usuario != null) {
+            return usuario.getPapel(); // Retorna o papel do usuário
+        }
+        throw new RemoteException("Usuário não encontrado.");
     }
 
 }

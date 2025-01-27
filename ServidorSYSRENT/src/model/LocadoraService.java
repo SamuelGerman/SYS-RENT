@@ -33,4 +33,10 @@ public interface LocadoraService extends Remote {
     int cadastrarUsuario(String login, String senha, String papel) throws RemoteException;
 
     public boolean cadastrarCliente(String nome, String cpfCnpj, String endereco, String telefone, String email, int idUsuario) throws RemoteException;
+    
+    boolean autenticarUsuario(String login, String senha) throws RemoteException;
+    
+    String obterPapelUsuario(String login) throws RemoteException;
+
+
 }
