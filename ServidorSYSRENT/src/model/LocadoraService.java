@@ -16,6 +16,8 @@ public interface LocadoraService extends Remote {
 
     List<Carro> listarCarrosVenda() throws RemoteException;
 
+    public List<Carro> listarVeiculosDisponiveisParaLocacao() throws RemoteException;
+
     boolean venderVeiculo(int id) throws RemoteException;
 
     boolean registrarVenda(int idCliente, int idOperador, int idCarro, double valorVenda) throws RemoteException;
@@ -33,10 +35,19 @@ public interface LocadoraService extends Remote {
     int cadastrarUsuario(String login, String senha, String papel) throws RemoteException;
 
     public boolean cadastrarCliente(String nome, String cpfCnpj, String endereco, String telefone, String email, int idUsuario) throws RemoteException;
-    
+
     boolean autenticarUsuario(String login, String senha) throws RemoteException;
-    
+
     String obterPapelUsuario(String login) throws RemoteException;
 
+    Usuario buscarUsuarioPorLogin(String login) throws RemoteException;
+
+    void exibirRelatorioVendas() throws RemoteException;
+
+    void exibirRelatorioLocacoes() throws RemoteException;
+
+    Carro buscarCarroPorId() throws RemoteException;
+
+    Carro buscarCarroPorPlaca() throws RemoteException;
 
 }

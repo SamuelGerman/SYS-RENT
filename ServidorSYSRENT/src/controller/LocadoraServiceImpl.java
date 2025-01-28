@@ -11,7 +11,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import model.Carro;
@@ -23,23 +22,22 @@ public class LocadoraServiceImpl extends UnicastRemoteObject implements Locadora
     private final Map<String, Usuario> usuarios = new HashMap<>();
 
     public LocadoraServiceImpl() throws RemoteException {
-        super(); 
+        super();
         carregarUsuariosDoBanco();
     }
-    
+
     private void carregarUsuariosDoBanco() {
         String query = "SELECT login, senha, papel FROM Usuarios";
 
-        try (Connection conn = ConexaoBD.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query);
-             ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = ConexaoBD.getConnection(); PreparedStatement stmt = conn.prepareStatement(query); ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
+                int id = rs.getInt("id_usuario");
                 String login = rs.getString("login");
                 String senha = rs.getString("senha");
                 String papel = rs.getString("papel");
 
-                usuarios.put(login, new Usuario(login, senha, papel)); // Adiciona ao HashMap
+                usuarios.put(login, new Usuario(id,login, senha, papel)); // Adiciona ao HashMap
                 System.out.println("Usuário carregado: " + login + ", Papel: " + papel);
             }
             System.out.println("Usuários carregados com sucesso.");
@@ -49,7 +47,6 @@ public class LocadoraServiceImpl extends UnicastRemoteObject implements Locadora
         }
     }
 
-    
     @Override
     public List<Carro> listarVeiculos() throws RemoteException {
         List<Carro> carros = new ArrayList<>();
@@ -75,6 +72,37 @@ public class LocadoraServiceImpl extends UnicastRemoteObject implements Locadora
             throw new RemoteException("Erro ao listar veículos.", e);
         }
         return carros;
+    }
+
+    @Override
+    public List<Carro> listarVeiculosDisponiveisParaLocacao() throws RemoteException {
+        List<Carro> carrosDisponiveis = new ArrayList<>();
+        String sql = "SELECT * FROM Carros WHERE status = ?";
+
+        try (Connection conn = ConexaoBD.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, "disponível"); // Filtra apenas veículos disponíveis
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Carro carro = new Carro(
+                            rs.getInt("id_carro"),
+                            rs.getString("placa"),
+                            rs.getString("modelo"),
+                            rs.getString("marca"),
+                            rs.getInt("ano"),
+                            rs.getDouble("quilometragem"),
+                            rs.getString("status"),
+                            rs.getDouble("preco_venda"),
+                            rs.getDate("data_cadastro")
+                    );
+                    carrosDisponiveis.add(carro);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RemoteException("Erro ao listar veículos disponíveis para locação.", e);
+        }
+        return carrosDisponiveis;
     }
 
     @Override
@@ -400,6 +428,87 @@ public class LocadoraServiceImpl extends UnicastRemoteObject implements Locadora
             return usuario.getPapel(); // Retorna o papel do usuário
         }
         throw new RemoteException("Usuário não encontrado.");
+    }
+
+    @Override
+    public Usuario buscarUsuarioPorLogin(String login) throws RemoteException {
+        if (usuarios.containsKey(login)) {
+            return usuarios.get(login); // Retorna o objeto Usuario do HashMap
+        } else {
+            throw new RemoteException("Usuário não encontrado.");
+        }
+    }
+
+    @Override
+    public void exibirRelatorioVendas() throws RemoteException {
+        String query = """
+        SELECT 
+            Vendas.id_venda, 
+            Clientes.nome AS cliente, 
+            Operadores.nome AS operador, 
+            Carros.modelo AS carro, 
+            Vendas.data_venda, 
+            Vendas.valor_venda
+        FROM Vendas
+        JOIN Clientes ON Vendas.id_cliente = Clientes.id_cliente
+        JOIN Operadores ON Vendas.id_operador = Operadores.id_operador
+        JOIN Carros ON Vendas.id_carro = Carros.id_carro
+        ORDER BY Vendas.data_venda DESC;
+    """;
+
+        try (Connection conn = ConexaoBD.getConnection(); PreparedStatement stmt = conn.prepareStatement(query); ResultSet rs = stmt.executeQuery()) {
+
+            System.out.println("=== Relatório de Vendas ===");
+            while (rs.next()) {
+                System.out.printf("Venda ID: %d | Cliente: %s | Operador: %s | Carro: %s | Data: %s | Valor: R$ %.2f%n",
+                        rs.getInt("id_venda"),
+                        rs.getString("cliente"),
+                        rs.getString("operador"),
+                        rs.getString("carro"),
+                        rs.getDate("data_venda"),
+                        rs.getBigDecimal("valor_venda")
+                );
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao gerar relatório de vendas: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void exibirRelatorioLocacoes() throws RemoteException {
+        String query = """
+        SELECT 
+            Locacoes.id_locacao, 
+            Clientes.nome AS cliente, 
+            Operadores.nome AS operador, 
+            Carros.modelo AS carro, 
+            Locacoes.data_inicio, 
+            Locacoes.data_fim, 
+            Locacoes.valor_locacao
+        FROM Locacoes
+        JOIN Clientes ON Locacoes.id_cliente = Clientes.id_cliente
+        JOIN Operadores ON Locacoes.id_operador = Operadores.id_operador
+        JOIN Carros ON Locacoes.id_carro = Carros.id_carro
+        ORDER BY Locacoes.data_inicio DESC;
+    """;
+
+        try (Connection conn = ConexaoBD.getConnection(); PreparedStatement stmt = conn.prepareStatement(query); ResultSet rs = stmt.executeQuery()) {
+
+            System.out.println("=== Relatório de Locações ===");
+            while (rs.next()) {
+                System.out.printf("Locação ID: %d | Cliente: %s | Operador: %s | Carro: %s | Início: %s | Fim: %s | Valor: R$ %.2f%n",
+                        rs.getInt("id_locacao"),
+                        rs.getString("cliente"),
+                        rs.getString("operador"),
+                        rs.getString("carro"),
+                        rs.getDate("data_inicio"),
+                        rs.getDate("data_fim"),
+                        rs.getBigDecimal("valor_locacao")
+                );
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao gerar relatório de locações: " + e.getMessage());
+        }
     }
 
 }
