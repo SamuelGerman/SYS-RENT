@@ -27,7 +27,7 @@ public class LocadoraServiceImpl extends UnicastRemoteObject implements Locadora
     }
 
     private void carregarUsuariosDoBanco() {
-        String query = "SELECT login, senha, papel FROM Usuarios";
+        String query = "SELECT id_usuario, login, senha, papel FROM Usuarios";
 
         try (Connection conn = ConexaoBD.getConnection(); PreparedStatement stmt = conn.prepareStatement(query); ResultSet rs = stmt.executeQuery()) {
 

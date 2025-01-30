@@ -6,9 +6,9 @@ import model.LocadoraService;
 
 import java.rmi.RemoteException;
 import java.util.List;
-import java.util.Scanner;
+import java.util.Scanner; 
 
-public class Cliente {
+public class Cliente{
 
     private final LocadoraService locadoraService;
     private Usuario usuarioAtual;
