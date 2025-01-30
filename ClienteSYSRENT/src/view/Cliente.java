@@ -1,20 +1,34 @@
 package view;
 
+import java.net.MalformedURLException;
 import model.Carro;
 import model.Usuario;
 import model.LocadoraService;
-
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.List;
-import java.util.Scanner; 
+import java.util.Scanner;
 
-public class Cliente{
+public class Cliente {
 
     private final LocadoraService locadoraService;
     private Usuario usuarioAtual;
 
     public Cliente(LocadoraService locadoraService) {
         this.locadoraService = locadoraService;
+    }
+
+    public static void main(String[] args) throws NotBoundException, RemoteException, MalformedURLException {
+        // Aqui você deve inicializar o LocadoraService e criar uma instância de Cliente
+        LocadoraService Service = (LocadoraService) Naming.lookup("rmi://localhost:1099/LocadoraService");
+        Cliente cliente = new Cliente(Service);
+
+        try {
+            cliente.iniciar();
+        } catch (RemoteException e) {
+            System.err.println("Erro ao iniciar o cliente: " + e.getMessage());
+        }
     }
 
     public void iniciar() throws RemoteException {
