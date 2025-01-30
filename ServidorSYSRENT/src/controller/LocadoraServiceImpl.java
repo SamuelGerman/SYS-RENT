@@ -37,7 +37,7 @@ public class LocadoraServiceImpl extends UnicastRemoteObject implements Locadora
                 String senha = rs.getString("senha");
                 String papel = rs.getString("papel");
 
-                usuarios.put(login, new Usuario(id,login, senha, papel)); // Adiciona ao HashMap
+                usuarios.put(login, new Usuario(id, login, senha, papel)); // Adiciona ao HashMap
                 System.out.println("Usuário carregado: " + login + ", Papel: " + papel);
             }
             System.out.println("Usuários carregados com sucesso.");
@@ -509,6 +509,60 @@ public class LocadoraServiceImpl extends UnicastRemoteObject implements Locadora
         } catch (SQLException e) {
             System.err.println("Erro ao gerar relatório de locações: " + e.getMessage());
         }
+    }
+
+    @Override
+    public Carro buscarCarroPorId(int id) throws RemoteException {
+        String sql = "SELECT * FROM Carros WHERE id_carro = ?";
+        try (Connection conn = ConexaoBD.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return new Carro(
+                        rs.getInt("id_carro"),
+                        rs.getString("placa"),
+                        rs.getString("modelo"),
+                        rs.getString("marca"),
+                        rs.getInt("ano"),
+                        rs.getDouble("quilometragem"),
+                        rs.getString("status"),
+                        rs.getDouble("preco_venda"),
+                        rs.getDate("data_cadastro")
+                );
+            }
+        } catch (SQLException e) {
+            throw new RemoteException("Erro ao buscar veículo pelo ID.", e);
+        }
+        return null; // Retorna null se não encontrar o veículo
+    }
+
+    @Override
+    public Carro buscarCarroPorPlaca(String placa) throws RemoteException {
+        String sql = "SELECT * FROM Carros WHERE placa = ?";
+        try (Connection conn = ConexaoBD.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, placa);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return new Carro(
+                        rs.getInt("id_carro"),
+                        rs.getString("placa"),
+                        rs.getString("modelo"),
+                        rs.getString("marca"),
+                        rs.getInt("ano"),
+                        rs.getDouble("quilometragem"),
+                        rs.getString("status"),
+                        rs.getDouble("preco_venda"),
+                        rs.getDate("data_cadastro")
+                );
+            }
+        } catch (SQLException e) {
+            throw new RemoteException("Erro ao buscar veículo pela placa.", e);
+        }
+        return null; // Retorna null se não encontrar o veículo
     }
 
 }

@@ -46,8 +46,8 @@ public interface LocadoraService extends Remote {
 
     void exibirRelatorioLocacoes() throws RemoteException;
 
-    Carro buscarCarroPorId() throws RemoteException;
+    Carro buscarCarroPorId(int id) throws RemoteException;
 
-    Carro buscarCarroPorPlaca() throws RemoteException;
+    Carro buscarCarroPorPlaca(String placa) throws RemoteException;
 
 }
